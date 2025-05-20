@@ -1,0 +1,13 @@
+{
+  "name": "midtrans-backend",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "description": "A simple Node.js backend for Midtrans payment integration",
+  "dependencies": {
+    "express": "^5.1.0",
+    "midtrans-client": "^1.4.2"
+  }
+}
