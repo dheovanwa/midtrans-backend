@@ -1,8 +1,19 @@
 const express = require("express");
 const midtransClient = require("midtrans-client");
+const cors = require("cors"); // Added this line
 require("dotenv").config();
 
 const app = express();
+
+// --- START CORS CONFIGURATION --- // Added this section
+// This tells your server to accept requests from your frontend
+const corsOptions = {
+  origin: "http://localhost:5173",
+};
+
+app.use(cors(corsOptions));
+// --- END CORS CONFIGURATION ---
+
 app.use(express.json());
 
 // Create Midtrans Core API instance
