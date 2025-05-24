@@ -5,39 +5,23 @@ require("dotenv").config();
 
 const app = express();
 
-// --- START ROBUST CORS CONFIGURATION ---
+// --- START: SIMPLIFIED & CORRECTED CORS CONFIGURATION ---
 
-// 1. Define your allowed origins. 
-// When you deploy your frontend, add its URL here. e.g., ['http://localhost:5173', 'https://your-frontend.onrender.com']
-const allowedOrigins = ['http://localhost:5173'];
-
-// 2. Configure CORS options
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true, // This is essential
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allow all common methods
-  allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization', // Allow common headers
+  // Add your deployed frontend URL here when you have one.
+  // For now, this is correct for local development.
+  origin: 'http://localhost:5173', 
+  credentials: true, // Allows cookies and credentials to be sent
+  optionsSuccessStatus: 200 // For legacy browser support
 };
 
-// 3. Use CORS middleware FIRST. This is crucial.
+// Use the CORS middleware AT THE TOP.
 app.use(cors(corsOptions));
 
-// 4. Explicitly handle preflight requests for all routes
-// This ensures OPTIONS requests are handled correctly before they reach your routes.
-app.options('*', cors(corsOptions)); 
-
-// --- END ROBUST CORS CONFIGURATION ---
+// --- END: CORS CONFIGURATION ---
 
 
-// Now, use your other middleware
+// Use your other middleware AFTER CORS
 app.use(express.json());
 
 
