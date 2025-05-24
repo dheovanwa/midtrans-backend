@@ -88,7 +88,6 @@ app.post("/api/notification", async (req, res) => {
 });
 
 const puppeteer = require('puppeteer');
-const midtransClient = require('midtrans-client');
 // Anda mungkin perlu db dari firebase-config jika belum ada di file ini
 // const { db } = require('./config/firebase'); // Sesuaikan path jika perlu
 
