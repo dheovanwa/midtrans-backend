@@ -92,3 +92,92 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+app.post("/api/invoice/create", async (req, res) => {
+    try {
+        const { orderId, amount, customerFirstName, customerEmail } = req.body;
+
+        if (!orderId || !amount || !customerFirstName || !customerEmail) {
+            return res.status(400).json({ error: "Required fields are missing." });
+        }
+
+        // Server Key Anda perlu di-encode ke Base64, dan jangan lupa tambahkan ':' di akhir
+        const serverKey = process.env.MIDTRANS_SERVER_KEY;
+        const base64ServerKey = Buffer.from(serverKey + ':').toString('base64');
+        
+        const invoiceParams = {
+            transaction_details: {
+                order_id: orderId,
+                gross_amount: amount
+            },
+            customer_details: {
+                first_name: customerFirstName,
+                email: customerEmail
+            },
+            item_details: [{
+                id: `item-${orderId}`,
+                price: amount,
+                quantity: 1,
+                name: 'Layanan Konsultasi'
+            }],
+            expiry: {
+                unit: "day",
+                duration: 7 // Invoice berlaku selama 7 hari
+            }
+        };
+
+        const response = await fetch('https://api.sandbox.midtrans.com/v2/invoices', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${base64ServerKey}`
+            },
+            body: JSON.stringify(invoiceParams)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(`Midtrans Error: ${data.error_messages ? data.error_messages.join(', ') : 'Unknown error'}`);
+        }
+
+        // Kirim kembali invoice_url dan invoice_id ke frontend
+        res.status(200).json({ invoice_url: data.invoice_url, id: data.id });
+
+    } catch (error) {
+        console.error("Failed to create Midtrans invoice:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get("/api/invoice/status/:invoice_id", async (req, res) => {
+    try {
+        const { invoice_id } = req.params;
+
+        const serverKey = process.env.MIDTRANS_SERVER_KEY;
+        const base64ServerKey = Buffer.from(serverKey + ':').toString('base64');
+
+        const response = await fetch(`https://api.sandbox.midtrans.com/v2/invoices/${invoice_id}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${base64ServerKey}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(`Midtrans Error: ${data.error_messages ? data.error_messages.join(', ') : 'Not Found'}`);
+        }
+        
+        // Kirim kembali seluruh data status invoice ke frontend
+        res.status(200).json(data);
+
+    } catch (error) {
+        console.error("Failed to get Midtrans invoice status:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
