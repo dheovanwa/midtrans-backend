@@ -1,20 +1,47 @@
 const express = require("express");
 const midtransClient = require("midtrans-client");
-const cors = require("cors"); // Added this line
+const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 
-// --- START CORS CONFIGURATION --- // Added this section
-// This tells your server to accept requests from your frontend
+// --- START ROBUST CORS CONFIGURATION ---
+
+// 1. Define your allowed origins. 
+// When you deploy your frontend, add its URL here. e.g., ['http://localhost:5173', 'https://your-frontend.onrender.com']
+const allowedOrigins = ['http://localhost:5173'];
+
+// 2. Configure CORS options
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true, // This is essential
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allow all common methods
+  allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization', // Allow common headers
 };
 
+// 3. Use CORS middleware FIRST. This is crucial.
 app.use(cors(corsOptions));
-// --- END CORS CONFIGURATION ---
 
+// 4. Explicitly handle preflight requests for all routes
+// This ensures OPTIONS requests are handled correctly before they reach your routes.
+app.options('*', cors(corsOptions)); 
+
+// --- END ROBUST CORS CONFIGURATION ---
+
+
+// Now, use your other middleware
 app.use(express.json());
+
+
+// --- Your existing code remains the same ---
 
 // Create Midtrans Core API instance
 const core = new midtransClient.CoreApi({
@@ -50,26 +77,7 @@ app.post("/api/payment", async (req, res) => {
 app.post("/api/notification", async (req, res) => {
   try {
     const statusResponse = await core.transaction.notification(req.body);
-    const orderId = statusResponse.order_id;
-    const transactionStatus = statusResponse.transaction_status;
-    const fraudStatus = statusResponse.fraud_status;
-
-    if (transactionStatus == "capture") {
-      if (fraudStatus == "challenge") {
-        // TODO: handle challenge transaction
-      } else if (fraudStatus == "accept") {
-        // TODO: handle successful transaction
-      }
-    } else if (transactionStatus == "settlement") {
-      // TODO: handle successful transaction
-    } else if (
-      transactionStatus == "cancel" ||
-      transactionStatus == "deny" ||
-      transactionStatus == "expire"
-    ) {
-      // TODO: handle failed transaction
-    }
-
+    // ... your notification logic
     res.status(200).json({ status: "OK" });
   } catch (error) {
     res.status(500).json({ error: error.message });
