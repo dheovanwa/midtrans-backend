@@ -5,7 +5,6 @@ require("dotenv").config();
 
 const app = express();
 
-// --- CORS Configuration ---
 const corsOptions = {
   origin: 'http://localhost:5173',
   credentials: true,
@@ -14,8 +13,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// --- MIDTRANS API INSTANCE ---
-// **CHANGED**: We are now using the Snap API, not the Core API
 const snap = new midtransClient.Snap({
   isProduction: false,
   serverKey: process.env.MIDTRANS_SERVER_KEY,
@@ -23,10 +20,8 @@ const snap = new midtransClient.Snap({
 });
 
 
-// --- PAYMENT ROUTE ---
 app.post("/api/payment", async (req, res) => {
   try {
-    // **CHANGED**: The parameter object is slightly different for Snap
     const parameter = {
       transaction_details: {
         order_id: `ORDER-${Date.now()}`,
@@ -37,19 +32,17 @@ app.post("/api/payment", async (req, res) => {
         last_name: req.body.lastName,
         email: req.body.email,
       },
-      // You can add enabled_payments here if you want to limit options
-      // enabled_payments: ["bank_transfer", "gopay"]
+      callbacks: {
+        finish: "http://localhost:5173/manage-appointment" 
+      }
     };
 
-    // **CHANGED**: We use snap.createTransaction() to get a token
     const transaction = await snap.createTransaction(parameter);
 
-    // The response from createTransaction is { token: "...", redirect_url: "..." }
     const transactionToken = transaction.token;
 
     console.log('Midtrans Transaction Token:', transactionToken);
 
-    // **CHANGED**: We send back ONLY the token inside a JSON object
     res.status(200).json({ token: transactionToken });
 
   } catch (error) {
@@ -59,7 +52,6 @@ app.post("/api/payment", async (req, res) => {
 });
 
 
-// --- NOTIFICATION ROUTE (No changes needed here) ---
 app.post("/api/notification", async (req, res) => {
   try {
     // You'll need a Core API instance just for notifications
