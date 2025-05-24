@@ -7,6 +7,7 @@
   },
   "description": "A simple Node.js backend for Midtrans payment integration",
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "midtrans-client": "^1.4.2"
